@@ -1,11 +1,43 @@
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import PageShell from "../components/PageShell";
 import { books, playlists, sentenceComments } from "../data/mockData";
+import { createComment, getCommentsBySentence } from "../services/comments";
 import { ArrowLeft, BookOpen, Heart, MessageSquare, Music2, Send } from "lucide-react";
 
 export default function Reader() {
   const { bookId } = useParams();
   const book = books.find((item) => item.id === bookId) || books[0];
+  const [comments, setComments] = useState(sentenceComments[0].comments);
+  const [input, setInput] = useState("");
+
+  useEffect(() => {
+    const loadComments = async () => {
+      try {
+        const data = await getCommentsBySentence(1);
+        if (Array.isArray(data) && data.length > 0) {
+          setComments(data.map((c) => c.content));
+        }
+      } catch (e) {
+        // fallback to mock comments
+      }
+    };
+
+    loadComments();
+  }, []);
+
+  const handleSubmitComment = async () => {
+    if (!input.trim()) return;
+
+    try {
+      await createComment(1, input.trim());
+      setComments((prev) => [...prev, input.trim()]);
+      setInput("");
+    } catch (e) {
+      setComments((prev) => [...prev, input.trim()]);
+      setInput("");
+    }
+  };
 
   return (
     <PageShell>
@@ -50,7 +82,7 @@ export default function Reader() {
                 <MessageSquare size={19} className="text-blue-600" /> 문장별 댓글
               </h3>
               <div className="space-y-4 mb-5">
-                {sentenceComments[0].comments.map((comment, index) => (
+                {comments.map((comment, index) => (
                   <div key={index} className="bg-slate-50 rounded-2xl p-4">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-sm font-bold">Reader {index + 1}</p>
@@ -61,8 +93,13 @@ export default function Reader() {
                 ))}
               </div>
               <div className="flex gap-2">
-                <input className="flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-4 focus:ring-blue-100" placeholder="댓글을 입력하세요" />
-                <button className="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center">
+                <input
+                  className="flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:ring-4 focus:ring-blue-100"
+                  placeholder="댓글을 입력하세요"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                />
+                <button onClick={handleSubmitComment} className="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center">
                   <Send size={17} />
                 </button>
               </div>
