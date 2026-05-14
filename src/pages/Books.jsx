@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
 import PageShell from "../components/PageShell";
 import TopHeader from "../components/TopHeader";
 import BookCard from "../components/BookCard";
 import { books } from "../data/mockData";
+import { getBooks } from "../services/api";
 import { BookOpen, Columns2, Moon, MessageSquare, Music2, Plus } from "lucide-react";
 
 const readingModes = [
@@ -26,6 +28,40 @@ const readingModes = [
 ];
 
 export default function Books() {
+  const [bookList, setBookList] = useState(books);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const loadBooks = async () => {
+      try {
+        const data = await getBooks();
+        const mapped = (data || []).map((book, idx) => ({
+          id: book.id,
+          title: book.name,
+          author: book.author_name,
+          chapters: 0,
+          status: "공개 중",
+          gradient: idx % 2 === 0 ? "from-blue-100 via-slate-100 to-white" : "from-emerald-100 via-slate-100 to-white",
+          description: `좋아요 ${book.like_count ?? 0}`
+        }));
+
+        if (mapped.length > 0) {
+          setBookList(mapped);
+          setError("");
+        } else {
+          setError("백엔드 응답이 비어 있어 mock 데이터를 표시합니다.");
+        }
+      } catch (e) {
+        setError("백엔드 연결 실패로 mock 데이터를 표시합니다.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadBooks();
+  }, []);
+
   return (
     <PageShell>
       <main className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-blue-50 p-5 md:p-8">
@@ -60,10 +96,12 @@ export default function Books() {
               <div>
                 <h3 className="font-black">추천 도서</h3>
                 <p className="text-sm text-slate-500 mt-1">각 문장마다 독자들의 생각을 나누고, 어울리는 음악과 함께 읽어보세요.</p>
+                {loading && <p className="text-xs text-slate-400 mt-1">백엔드에서 도서 목록을 불러오는 중...</p>}
+                {!loading && error && <p className="text-xs text-amber-600 mt-1">{error}</p>}
               </div>
             </div>
             <div className="grid md:grid-cols-3 gap-6">
-              {books.map((book) => <BookCard key={book.id} book={book} />)}
+              {bookList.map((book) => <BookCard key={book.id} book={book} />)}
             </div>
           </section>
 
