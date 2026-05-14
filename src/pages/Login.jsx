@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BookOpen, Github, Mail, Music2, Sparkles } from "lucide-react";
+import { loginWithEmail } from "../services/auth";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -8,13 +9,15 @@ export default function Login() {
   const [password, setPassword] = useState("1234");
   const [error, setError] = useState(false);
 
-  const handleLogin = (event) => {
+  const handleLogin = async (event) => {
     event.preventDefault();
-    if (!email.includes("@") || password.length < 4) {
+
+    try {
+      await loginWithEmail({ email, password });
+      navigate("/dashboard");
+    } catch {
       setError(true);
-      return;
     }
-    navigate("/dashboard");
   };
 
   return (
